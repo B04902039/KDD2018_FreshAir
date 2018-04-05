@@ -11,7 +11,9 @@ def smape(y_true, y_pred):
 def mape(y_true, y_pred):
     diff = np.abs(y_pred - y_true)
     factor = (np.abs(y_true))
-    return 200 * np.mean(( diff / factor).fillna(0))
+    y = diff / factor
+    y[np.isnan(y)] = 0
+    return 100 * np.mean(y)
 
 def mse(y_true, y_pred):
     diff = np.square(y_pred - y_true)

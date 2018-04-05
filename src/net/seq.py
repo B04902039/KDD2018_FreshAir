@@ -6,17 +6,15 @@ import torch.nn.functional as F
 class EncoderRNN(nn.Module):
     def __init__(self, input_dim, args):
         super(EncoderRNN, self).__init__()
-        self.input_dim = hidden_dim
+        self.input_dim = input_dim
         self.hidden_dim = args.hidden_dim
         self.dropout = args.dropout
         self.use_cuda = args.use_cuda
         self.use_bidirection = args.use_bidirection
-        
-
         if self.use_bidirection:
-            self.gru = nn.GRU(input_dim, hidden_dim//2, dropout = self.dropout, bidirectional=True)
+            self.gru = nn.GRU(input_dim, self.hidden_dim//2, dropout = self.dropout, bidirectional=True)
         else :
-            self.gru = nn.GRU(input_dim, hidden_dim, dropout = self.dropout)
+            self.gru = nn.GRU(input_dim, self.hidden_dim, dropout = self.dropout)
 
     def init_hidden(self, batch_size):
         if self.use_bidirection:
@@ -45,10 +43,12 @@ class DecoderRNN(nn.Module):
         self.use_bidirection = args.use_bidirection
         
         if self.use_bidirection:
-            self.gru = nn.GRU(input_dim, hidden_dim//2, dropout = self.dropout, bidirectional=True)
+            self.gru = nn.GRU(self.output_dim, self.hidden_dim//2,
+                dropout = self.dropout, bidirectional=True)
         else :
-            self.gru = nn.GRU(input_dim, hidden_dim, dropout = self.dropout)
-        self.out = nn.Linear(hidden_dim, output_dim)
+            self.gru = nn.GRU(self.output_dim, self.hidden_dim,
+                dropout = self.dropout)
+        self.out = nn.Linear(self.hidden_dim, self.output_dim)
 
     def init_hidden(self, batch_size):
         if self.use_bidirection:
@@ -63,7 +63,10 @@ class DecoderRNN(nn.Module):
                 h0 = Variable(torch.zeros(1, batch_size, self.hidden_dim))
         return h0
         
-    def forward(self, input, hidden):
-        output, hidden = self.gru(input, hidden)
-        output = self.out(output[0])
+    def forward(self, input, last_hidden, encoder_outputs = None):
+        x = input[:,:,:3]
+        output, hidden = self.gru(x, last_hidden)
+        output = output.squeeze(0)
+        hidden = hidden.squeeze(0)
+        output = self.out(output)
         return output, hidden
