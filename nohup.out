@@ -33905,3 +33905,8 @@ save_interval    : 100
 loss : 65.035 smape : 125.464 mape : 86.933
 ======== valid ========
 loss : 39.451 smape : 107.231 mape : 97.158
+======== eval 20 ========
+======== train ========
+loss : 63.900 smape : 126.749 mape : 88.027
+======== valid ========
+loss : 38.533 smape : 108.183 mape : 98.621
