@@ -33778,3 +33778,130 @@ Traceback (most recent call last):
   File "/home/chentp6vu3jp6/wayne/lib/python3.6/site-packages/numpy/core/numeric.py", line 492, in asarray
     return array(a, dtype, copy=False, order=order)
 ValueError: could not broadcast input array from shape (48,16,3) into shape (48)
+test             : False
+train            : True
+use_cuda         : True
+use_bidirection  : False
+load             : False
+meta_dir         : meta
+model_dir        : model
+data_dir         : data
+train_path       : data/train_fillna.csv
+test_path        : data/test.csv
+decoder_type     : seq
+optimizer_type   : rmsprop
+criterion_type   : mse
+method           : concat
+input_length     : 48
+output_length    : 48
+hidden_dim       : 10
+valid_ratio      : 0.2
+tfr              : 0.8
+dropout          : 0.2
+lr               : 0.001
+epochs           : 100
+batch_size       : 8
+log_interval     : 20
+save_interval    : 100
+usage: main.py [-h] [--test] [--train] [--use-cuda] [--use-bidirection]
+               [--load] [--meta-dir META_DIR] [--model-dir MODEL_DIR]
+               [--data-dir DATA_DIR] [--train-path TRAIN_PATH]
+               [--test-path TEST_PATH] [--decoder-type DECODER_TYPE]
+               [--optimizer-type OPTIMIZER_TYPE]
+               [--criterion-type CRITERION_TYPE] [--method METHOD]
+               [--input-length INPUT_LENGTH] [--output-length OUTPUT_LENGTH]
+               [--hidden-dim HIDDEN_DIM] [--valid-ratio VALID_RATIO]
+               [--tfr TFR] [--dropout DROPOUT] [--lr LR] [--epochs EPOCHS]
+               [--batch-size BATCH_SIZE] [--log-interval LOG_INTERVAL]
+               [--save-interval SAVE_INTERVAL]
+main.py: error: unrecognized arguments: -- decoder-type attn
+======== eval 0 ========
+======== train ========
+loss : 71.420 smape : 183.426 mape : 95.075
+======== valid ========
+loss : 46.469 smape : 155.910 mape : 84.897
+test             : False
+train            : True
+use_cuda         : True
+use_bidirection  : False
+load             : False
+meta_dir         : meta
+model_dir        : model
+data_dir         : data
+train_path       : data/train_fillna.csv
+test_path        : data/test.csv
+decoder_type     : attn
+optimizer_type   : rmsprop
+criterion_type   : mse
+method           : concat
+input_length     : 48
+output_length    : 48
+hidden_dim       : 10
+valid_ratio      : 0.2
+tfr              : 0.8
+dropout          : 0.2
+lr               : 0.001
+epochs           : 100
+batch_size       : 8
+log_interval     : 20
+save_interval    : 100
+======== eval 0 ========
+======== train ========
+loss : 71.063 smape : 182.485 mape : 94.383
+======== valid ========
+loss : 46.192 smape : 156.394 mape : 84.207
+test             : False
+train            : True
+use_cuda         : True
+use_bidirection  : False
+load             : False
+meta_dir         : meta
+model_dir        : model
+data_dir         : data
+train_path       : data/train_fillna.csv
+test_path        : data/test.csv
+decoder_type     : bahdan
+optimizer_type   : rmsprop
+criterion_type   : mse
+method           : concat
+input_length     : 48
+output_length    : 48
+hidden_dim       : 10
+valid_ratio      : 0.2
+tfr              : 0.8
+dropout          : 0.2
+lr               : 0.001
+epochs           : 100
+batch_size       : 8
+log_interval     : 20
+save_interval    : 100
+test             : False
+train            : True
+use_cuda         : True
+use_bidirection  : False
+load             : False
+meta_dir         : meta
+model_dir        : model
+data_dir         : data
+train_path       : data/train_fillna.csv
+test_path        : data/test.csv
+decoder_type     : luong
+optimizer_type   : rmsprop
+criterion_type   : mse
+method           : concat
+input_length     : 48
+output_length    : 48
+hidden_dim       : 10
+valid_ratio      : 0.2
+tfr              : 0.8
+dropout          : 0.2
+lr               : 0.001
+epochs           : 100
+batch_size       : 8
+log_interval     : 20
+save_interval    : 100
+======== eval 20 ========
+======== train ========
+loss : 65.035 smape : 125.464 mape : 86.933
+======== valid ========
+loss : 39.451 smape : 107.231 mape : 97.158

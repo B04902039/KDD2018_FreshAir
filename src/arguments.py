@@ -14,26 +14,26 @@ def parse():
     parser.add_argument('--model-dir', type=str, default='model', help='model dir')        
     parser.add_argument('--data-dir', type=str, default='data', help='data dir')        
     # path
-    parser.add_argument('--train-path', type=str, default='data/train.csv', help='train file') 
+    parser.add_argument('--train-path', type=str, default='data/train_fillna.csv', help='train file') 
     parser.add_argument('--test-path', type=str, default='data/test.csv', help='test file')   
     # model type
     parser.add_argument('--decoder-type', type=str, default='seq', help='model type')        
-    parser.add_argument('--optimizer-type', type=str, default='sgd', help='model opt')        
+    parser.add_argument('--optimizer-type', type=str, default='rmsprop', help='model opt')        
     parser.add_argument('--criterion-type', type=str, default='mse', help='model loss')    
     parser.add_argument('--method', type=str, default='concat', help='attn method')        
     # model structure
     parser.add_argument('--input-length', type=int, default=48, help='input length')        
     parser.add_argument('--output-length', type=int, default=48, help='output length')     
-    parser.add_argument('--hidden-dim', type=int, default=16, help='hidden dim')   
+    parser.add_argument('--hidden-dim', type=int, default=10, help='hidden dim')   
     # train parameter
     parser.add_argument('--valid-ratio', type=float, default=0.2, help='valid ratio')        
     parser.add_argument('--tfr', type=float, default=0.8, help='teacher forcing ratio')  
     parser.add_argument('--dropout', type=float, default=0.2, help='dropout rate')   
-    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')   
-    parser.add_argument('--epochs', type=int, default=16, help='epochs')   
-    parser.add_argument('--batch-size', type=int, default=16, help='epochs')   
+    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')   
+    parser.add_argument('--epochs', type=int, default=100, help='epochs')   
+    parser.add_argument('--batch-size', type=int, default=8, help='epochs')   
     # interval 
-    parser.add_argument('--log-interval', type=int, default=10, help='log interval')     
+    parser.add_argument('--log-interval', type=int, default=20, help='log interval')     
     parser.add_argument('--save-interval', type=int, default=100, help='save interval')      
 
     args = parser.parse_args()

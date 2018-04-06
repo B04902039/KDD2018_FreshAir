@@ -8,7 +8,7 @@ import math
 from torch.utils.data import Dataset, DataLoader
 from torch import FloatTensor
 
-schema = ['PM2.5','PM10', 'O3','NO2','CO','SO2']
+schema = ['PM2.5','PM10','O3','NO2','CO','SO2']
 d_schema = ['quarter_cos', 'quarter_sin', 'month_cos', 'month_sin', 
     'weekday_cos', 'weekday_sin', 'hour_cos', 'hour_sin']
 
@@ -66,8 +66,9 @@ def load_train_data(args):
     df = df.fillna(method='pad')
     df = df.fillna(0)
     
-    # df.to_csv('data/train_fillna.csv', sep = ',', index = False)
+    area = pd.get_dummies(df['area'])
     df = df[['stationId'] + schema + ['date','quarter','month','weekday','hour']]
+    df = df.join(area)
     df = tranform_corordinate(df)
     df = df.groupby('stationId')
     data = {}
@@ -81,8 +82,6 @@ def load_train_data(args):
             fs.append(f)
             h = d[['PM2.5','PM10','O3']].values
             hs.append(h)
-
-        
         fs = fs[:-2]
         hs = hs[2:]
         inputs = []

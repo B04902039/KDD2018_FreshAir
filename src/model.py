@@ -34,7 +34,9 @@ class AirNet(object):
         if args.use_cuda:  
             self.encoder.cuda()
             self.decoder.cuda()
-
+        self.tr_hist = []
+        self.val_hist = []
+        
     def init_model(self, args):
         self.encoder  = EncoderRNN(self.input_dim, args)
         if (args.decoder_type == 'attn'):
@@ -92,11 +94,9 @@ class AirNet(object):
                 decoder_input = decoder_output
 
         loss = self.criterion(pred_seq, output_seq)
-        return loss, output_seq, pred_seq
+        return loss, output_seq.transpose(0, 1), pred_seq.transpose(0, 1)
     
     def log(self, gts, preds, losss):
-        gts = np.asarray(gts)
-        preds = np.asarray(preds)
         _smape = smape(gts, preds)
         _mape = mape(gts, preds)
         _loss = np.mean(losss)
@@ -117,34 +117,34 @@ class AirNet(object):
                 loss.backward()
                 self.encoder_opt.step()
                 self.decoder_opt.step()
-
                 _loss = loss.data.cpu().numpy()
                 _pred = pred.data.cpu().numpy()
                 _gt = gt.data.cpu().numpy()
-
-                LOSSs.append(_loss)
-                PREDs.append(_pred)
-                GTs.append(_gt)
-            
-                if self.steps % self.save_interval == 0:
-                    print('======== save ========')
-                    self.save(self.steps)
-                if self.steps % self.log_interval == 0:
-                    print('======== log ========')
-                    print('epoch : {} iters : {}'.format(e, self.steps)) 
-                    self.log(GTs, PREDs, LOSSs)
+                if len(LOSSs) == 0 :
+                    LOSSs = _loss
+                    PREDs = _pred
+                    GTs = _gt
+                else :
+                    LOSSs = np.concatenate([LOSSs, _loss], axis=0)
+                    PREDs = np.concatenate([PREDs, _pred], axis=0)
+                    GTs = np.concatenate([GTs, _gt], axis=0)
                 self.steps += 1                
 
-            print('======== eval {} ========'.format(e))  
-            print('======== train ========')
-            _loss, _smape, _mape = self.log(GTs, PREDs, LOSSs)
-            self.tr_hist.append([_loss, _smape, _mape])
-            _loss, _smape, _mape = self.eval(valid_loader)
-            print('======== valid ========')
-            self.val_hist.append([_loss, _smape, _mape])
+                if self.steps % self.save_interval == 0:
+                    # print('======== save ========')
+                    self.save(self.steps)
+            if e % self.log_interval == 0:
+                print('======== eval {} ========'.format(e))  
+                print('======== train ========')
+                _loss, _smape, _mape = self.log(GTs, PREDs, LOSSs)
+                self.tr_hist.append([_loss, _smape, _mape])
+                print('======== valid ========')
+                _loss, _smape, _mape = self.eval(valid_loader)
+                self.val_hist.append([_loss, _smape, _mape])
 
     def eval(self, valid_loader):  
-        self.model.eval()
+        self.encoder.eval()
+        self.decoder.eval()
         PREDs = []
         GTs = []
         LOSSs = []
@@ -153,22 +153,22 @@ class AirNet(object):
             _loss = loss.data.cpu().numpy()
             _pred = pred.data.cpu().numpy()
             _gt = gt.data.cpu().numpy()
-            LOSSs.append(_loss)
-            PREDs.append(_pred)
-            GTs.append(_gt)
-            
-        score(GTs, PREDs, LOSSs)
-        pred = np.asarray(PREDs)
-        gt = np.asarray(GTs)
-        _loss = np.mean(LOSSs)
-        _smape = smape(gt, pred)
-        _mape = mape(gt, pred)
+            if len(LOSSs) == 0 :
+                LOSSs = _loss
+                PREDs = _pred
+                GTs = _gt
+            else :
+                LOSSs = np.concatenate([LOSSs, _loss], axis=0)
+                PREDs = np.concatenate([PREDs, _pred], axis=0)
+                GTs = np.concatenate([GTs, _gt], axis=0)
         _loss, _smape, _mape = self.log(GTs, PREDs, LOSSs)
-        self.model.train()
+        self.encoder.train()
+        self.decoder.train()
         return _loss, _smape, _mape
         
     def test(self, test_loader):  
-        self.model.eval()
+        self.encoder.eval()
+        self.decoder.eval()
         PREDs = []
         for i, x in enumerate(test_loader):
             input_seq = x['input']
