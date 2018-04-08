@@ -65701,3 +65701,42 @@ epochs           : 50
 batch_size       : 64
 log_interval     : 1
 save_interval    : 100
+test             : False
+train            : True
+use_cuda         : True
+use_bidirection  : False
+load             : False
+meta_dir         : meta
+model_dir        : model
+data_dir         : data
+exp_dir          : exp
+train_path       : data/train_fillna.csv
+test_path        : data/test.csv
+decoder_type     : luong
+optimizer_type   : rmsprop
+criterion_type   : mse
+method           : concat
+hidden_dim       : 10
+valid_ratio      : 0.2
+tfr              : 0.8
+dropout          : 0.2
+lr               : 0.001
+epochs           : 50
+batch_size       : 64
+log_interval     : 1
+save_interval    : 100
+======== eval 0 ========
+======== train ========
+loss : 71.218 smape : 175.417 mape : 92.219
+======== valid ========
+loss : 44.883 smape : 142.546 mape : 80.369
+======== eval 0 ========
+======== train ========
+loss : 71.288 smape : 175.401 mape : 92.026
+======== valid ========
+loss : 45.175 smape : 141.545 mape : 78.626
+======== eval 1 ========
+======== train ========
+loss : 69.514 smape : 160.688 mape : 88.711
+======== valid ========
+loss : 44.197 smape : 131.516 mape : 79.360
