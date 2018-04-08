@@ -6,6 +6,7 @@ def smape(y_true, y_pred):
     factor = (np.abs(y_pred) + np.abs(y_true))
     y = diff / factor
     y[np.isnan(y)] = 0
+    y[np.isinf(y)] = 0
     return 200 * np.mean(y)
 
 def mape(y_true, y_pred):
@@ -13,6 +14,8 @@ def mape(y_true, y_pred):
     factor = (np.abs(y_true))
     y = diff / factor
     y[np.isnan(y)] = 0
+    y[np.isinf(y)] = 0
+    
     return 100 * np.mean(y)
 
 def mse(y_true, y_pred):

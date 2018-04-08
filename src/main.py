@@ -7,9 +7,11 @@ from utils import *
 def train(args):
     data = load_train_data(args)
     for g, d in data.items():
-        input_dim = d['input'][0].shape[1]
-        output_dim = d['output'][0].shape[1]
-        model = AirNet(input_dim, output_dim, args)
+    # if True :
+        # d = data
+        model = AirNet(d['input'][0].shape, d['output'][0].shape, args)
+        # model = AirNet(d['input'][0].shape, d['output'][0].shape, args)
+        
         train_data, valid_data = split_data(d, args.valid_ratio)
         train_data = AirDataSet(train_data)
         valid_data = AirDataSet(valid_data)
@@ -25,7 +27,9 @@ def train(args):
                             pin_memory = args.use_cuda)
         if (args.load):   
             model.load(args.model_path)
-        model.train(train_loader, valid_loader)
+        tr_hist, val_hist = model.train(train_loader, valid_loader)
+        np.save('{}/{}_{}_tr.npy'.format(args.exp_dir, args.decoder_type, g), tr_hist)
+        np.save('{}/{}_{}_val.npy'.format(args.exp_dir, args.decoder_type, g), val_hist)
         
 def test(args):
     pass
@@ -37,6 +41,8 @@ if __name__ == '__main__':
         os.makedirs('model/')
     if not os.path.exists('data/'):
         os.makedirs('data/')
+    if not os.path.exists('exp/'):
+        os.makedirs('exp/')
     args = parse()
     print_args(args)
     if args.train:

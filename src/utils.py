@@ -11,7 +11,7 @@ from torch import FloatTensor
 schema = ['PM2.5','PM10','O3','NO2','CO','SO2']
 d_schema = ['quarter_cos', 'quarter_sin', 'month_cos', 'month_sin', 
     'weekday_cos', 'weekday_sin', 'hour_cos', 'hour_sin']
-
+a_schema = ['other',  'suburban', 'traffic', 'urban']
 class AirDataSet(Dataset):
     def __init__(self, data = None, istrain = True):
         self.inputs = data['input']
@@ -72,24 +72,100 @@ def load_train_data(args):
     df = tranform_corordinate(df)
     df = df.groupby('stationId')
     data = {}
+
+    return hour2hour_nogroup(df)
+
+def hour2hour_nogroup(df):
+    data = {}
+    for g1, s in df:
+        data[g1] = {}
+        s = s.groupby('date')
+        fs = []
+        hs = []
+        inputs = []
+        outputs = []
+        for g2, d in s:
+            f = d[schema+ d_schema + a_schema].values
+            fs.append(f)
+            h = d[['PM2.5','PM10','O3']].values
+            hs.append(h)
+        fs = fs[:-2]
+        hs = hs[2:]
+        for i in range(len(fs) - 1):
+            f = np.concatenate((fs[i], fs[i+1]), axis=0)
+            inputs.append(f)
+            h = hs[i]
+            # h = np.concatenate((hs[i], hs[i+1]), axis=0)
+            outputs.append(h)
+        data[g1]['input'] = np.asarray(inputs)        
+        data[g1]['output'] = np.asarray(outputs)
+        
+    return data
+
+def hour2hour_nogroup(df):
+    data = {}
+    for g1, d in df:
+        data[g1] = {}
+        fs = []
+        hs = []
+        inputs = []
+        outputs = []
+        fs = d[schema+ d_schema + a_schema].values
+        hs = d[['PM2.5','PM10','O3']].values
+        fs = fs[:-48]
+        hs = hs[48:]
+        for i in range(len(fs) - 47):
+            f =fs[i:i+48]
+            inputs.append(f)
+            h =hs[i:i+24]
+            outputs.append(h)
+        data[g1]['input'] = np.asarray(inputs)
+        data[g1]['output'] = np.asarray(outputs)
+    return data
+
+def date2date(df):
+    data = {}
     for g1, s in df:
         data[g1] = {}
         s = s.groupby('date')
         fs = []
         hs = []
         for g2, d in s:
-            f = d[schema+ d_schema].values
+            f = np.mean(d[schema+ d_schema+ a_schema].values, 0)
             fs.append(f)
-            h = d[['PM2.5','PM10','O3']].values
+            h = np.mean(d[['PM2.5','PM10','O3']].values, 0)
             hs.append(h)
-        fs = fs[:-2]
-        hs = hs[2:]
+        fs = np.asarray(fs)
+        hs = np.asarray(hs[10:])
+        inputs = []
+        outputs = []
+        for i in range(len(hs) - 1):
+            inputs.append(fs[i:i+10])
+            outputs.append(hs[i:i+2])
+        data[g1]['input'] = np.asarray(inputs)
+        data[g1]['output'] = np.asarray(outputs)
+    return data
+
+def hour2date(df):
+    data = {}
+    for g1, s in df:
+        data[g1] = {}
+        s = s.groupby('date')
+        fs = []
+        hs = []
+        for g2, d in s:
+            f = d[schema+ d_schema+ a_schema].values
+            fs.append(f)
+            h = np.mean(d[['PM2.5','PM10','O3']].values, 0)
+            hs.append(h)
+        fs = np.asarray(fs[:-2])
+        hs = np.asarray(hs[2:])
         inputs = []
         outputs = []
         for i in range(len(fs) - 1):
             f = np.concatenate((fs[i], fs[i+1]), axis=0)
             inputs.append(f)
-            h = np.concatenate((hs[i], hs[i+1]), axis=0)
+            h = hs[i:i+2]
             outputs.append(h)
         data[g1]['input'] = inputs
         data[g1]['output'] = outputs
@@ -122,14 +198,14 @@ def to_polor(col, period):
 def fillna(df, areas):
     df = df.interpolate(limit=1, limit_direction='both')
     stations = df['stationId'].unique()
+    stations = df['area'].unique()
     years = df['year'].unique()
     weeks = df['week'].unique()
     dates = df['date'].unique()
     hours = df['hour'].unique()
     print (df.isnull().values.any())
-    for s in stations:
-        s_loc = df['stationId'] == s
-        a = areas[s]['area']
+
+    for a in areas:
         a_loc = df['area'] == a
         for h in hours:
             h_loc = df['hour'] == h
@@ -139,9 +215,15 @@ def fillna(df, areas):
                 if (df.loc[fill].isnull().values.any()):
                     loc = fill
                     if(len(df.loc[loc].dropna()) != 0):
-                        print(a, s, d, h)
                         mean = df.loc[loc].dropna().mean().round(2)
                         df.loc[fill] = df.loc[fill].fillna(mean)
+
+    for s in stations:
+        s_loc = df['stationId'] == s
+        a = areas[s]['area']
+        a_loc = df['area'] == a
+        for h in hours:
+            h_loc = df['hour'] == h
             for y in years:
                 y_loc = df['year'] == y
                 for w in weeks:

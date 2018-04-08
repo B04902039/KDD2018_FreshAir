@@ -4,61 +4,54 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 class Attn(nn.Module):
-    def __init__(self, args):
+    def __init__(self, output_length, args):
         super(Attn, self).__init__()
         
         self.method = args.method
         self.hidden_dim = args.hidden_dim
-        self.input_length = args.input_length
+        self.output_length = output_length
         self.dropout = args.dropout
         self.use_cuda = args.use_cuda
-        
-        if self.method == 'general':
-            self.attn = nn.Linear(self.hidden_dim, self.hidden_dim)
 
-        elif self.method == 'concat':
+        if self.method == 'general':
+            self.v = nn.Linear(self.hidden_dim, 1)
+        if self.method == 'concat':
             self.attn = nn.Linear(self.hidden_dim * 2, self.hidden_dim)
-            self.v = nn.Parameter(torch.FloatTensor(1, self.hidden_dim))
+            self.v = nn.Linear(self.hidden_dim, 1)
 
     def forward(self, hidden, encoder_outputs):
         max_len = encoder_outputs.size(0)
         batch_size = encoder_outputs.size(1)
-
-        attn_weights = Variable(torch.zeros(batch_size, max_len))
-
-        if self.use_cuda:
-            attn_weights = attn_weights.cuda()
-
-        for b in range(batch_size):
+        encoder_outputs = encoder_outputs.transpose(0, 1)
+        if self.method == 'dot':
+            attn_weights = torch.bmm(encoder_outputs,
+                hidden.unsqueeze(2)).squeeze(2)
+        if self.method == 'general' or self.method == 'concat':
+            hiddens = hidden.unsqueeze(1)
+            hiddens = hiddens.repeat(1, max_len, 1)
+            hiddens = torch.cat((hiddens, encoder_outputs), 2)
+            attn_weights = Variable(torch.zeros(batch_size, max_len))
+            if self.use_cuda:
+                attn_weights = attn_weights.cuda()
             for i in range(max_len):
-                attn_weights[b, i] = self.score(hidden[b, :].unsqueeze(0),
-                    encoder_outputs[i, b].unsqueeze(0))
-
+                attn_weights[:, i] = self.score(hiddens[:, i])
         return F.softmax(attn_weights, dim = 1)
     
-    def score(self, hidden, encoder_output):
-        if self.method == 'dot':
-            energy = hidden.dot(encoder_output)
-            return energy
-        
-        elif self.method == 'general':
-            energy = self.attn(encoder_output)
-            energy = hidden.dot(energy)
-            return energy
-        
-        elif self.method == 'concat':
-            energy = self.attn(torch.cat((hidden, encoder_output), 1))
-            energy = self.v.dot(energy)
-            return energy
+    def score(self, hidden):
+        if self.method == 'general':
+            energy = self.v(hidden)
+        if self.method == 'concat':
+            energy = self.attn(hidden)
+            energy = self.v(energy)
+        return energy
 
 
 class AttnDecoderRNN(nn.Module):
-    def __init__(self, input_dim, output_dim, args):
+    def __init__(self, input_shape, output_shape, args):
         super(AttnDecoderRNN, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.input_length, self.input_dim = input_shape
+        self.output_length, self.output_dim = output_shape
         self.hidden_dim = args.hidden_dim
-        self.input_length = args.input_length
         self.dropout = args.dropout
         self.use_cuda = args.use_cuda
         self.use_bidirection = args.use_bidirection
@@ -105,13 +98,12 @@ class AttnDecoderRNN(nn.Module):
         return output, hidden
 
 class BahdanauAttnDecoderRNN(nn.Module):
-    def __init__(self, input_dim, output_dim, args):
+    def __init__(self, input_shape, output_shape, args):
         super(BahdanauAttnDecoderRNN, self).__init__()
-        self.attn_model = Attn(args)
-        self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.input_length, self.input_dim = input_shape
+        self.output_length, self.output_dim = output_shape
         self.hidden_dim = args.hidden_dim
-        self.input_length = args.input_length
+        self.attn_model = Attn(self.output_length, args)
         self.dropout = args.dropout
         self.use_cuda = args.use_cuda
         self.use_bidirection = args.use_bidirection
@@ -150,14 +142,12 @@ class BahdanauAttnDecoderRNN(nn.Module):
         return output, hidden
 
 class LuongAttnDecoderRNN(nn.Module):
-    def __init__(self, input_dim, output_dim, args):
+    def __init__(self, input_shape, output_shape, args):
         super(LuongAttnDecoderRNN, self).__init__()
-
-        self.attn_model = Attn(args)
-        self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.input_length, self.input_dim = input_shape
+        self.output_length, self.output_dim = output_shape
         self.hidden_dim = args.hidden_dim
-        self.input_length = args.input_length
+        self.attn_model = Attn(self.output_length, args)
         self.dropout = args.dropout
         self.use_cuda = args.use_cuda
         self.use_bidirection = args.use_bidirection
