@@ -67,21 +67,17 @@ def load_train_data(args):
     df = df.fillna(0)
     
     area = pd.get_dummies(df['area'])
-    df = df[['stationId'] + schema + ['date','quarter','month','weekday','hour']]
     df = df.join(area)
     df = tranform_corordinate(df)
+
+    return hour2hour_byarea(df)
+
+def hour2hour(df):
     df = df.groupby('stationId')
-    data = {}
-
-    return hour2hour_nogroup(df)
-
-def hour2hour_nogroup(df):
     data = {}
     for g1, s in df:
         data[g1] = {}
         s = s.groupby('date')
-        fs = []
-        hs = []
         inputs = []
         outputs = []
         for g2, d in s:
@@ -103,11 +99,10 @@ def hour2hour_nogroup(df):
     return data
 
 def hour2hour_nogroup(df):
+    df = df.groupby('stationId')
     data = {}
     for g1, d in df:
         data[g1] = {}
-        fs = []
-        hs = []
         inputs = []
         outputs = []
         fs = d[schema+ d_schema + a_schema].values
@@ -123,7 +118,31 @@ def hour2hour_nogroup(df):
         data[g1]['output'] = np.asarray(outputs)
     return data
 
+
+def hour2hour_byarea(df):
+    df = df.groupby('area')
+    data = {}
+    for g1, a in df:
+        s_df = a.groupby('stationId')
+        inputs = []
+        outputs = []
+        data[g1] = {}
+        for g2, s in s_df:
+            fs = s[schema+ d_schema + a_schema].values
+            hs = s[['PM2.5','PM10','O3']].values
+            fs = fs[:-48]
+            hs = hs[48:]
+            for i in range(len(fs) - 47):
+                f =fs[i:i+48]
+                inputs.append(f)
+                h =hs[i:i+24]
+                outputs.append(h)
+        data[g1]['input'] = np.asarray(inputs)
+        data[g1]['output'] = np.asarray(outputs)
+    return data
+
 def date2date(df):
+    df = df.groupby('stationId')
     data = {}
     for g1, s in df:
         data[g1] = {}
@@ -147,6 +166,7 @@ def date2date(df):
     return data
 
 def hour2date(df):
+    df = df.groupby('stationId')
     data = {}
     for g1, s in df:
         data[g1] = {}
@@ -171,7 +191,7 @@ def hour2date(df):
         data[g1]['output'] = outputs
     return data
 
-def parse_time(df, areas):
+ def parse_time(df, areas):
     df['utc_time'] = pd.to_datetime(df['utc_time'])
     df['year'] = df['utc_time'].dt.year
     df['quarter'] = df['utc_time'].dt.quarter
@@ -182,7 +202,8 @@ def parse_time(df, areas):
     df['day'] = df['utc_time'].dt.day
     df['hour'] = df['utc_time'].dt.hour
     df['area'] = df['stationId'].apply(lambda x: areas[x]['area'])
-    return df
+    return df   
+
 def tranform_corordinate(df):
     df['quarter_cos'], df['quarter_sin'] = to_polor(df['quarter'], 4)
     df['month_cos'], df['month_sin'] = to_polor(df['month'], 31)
@@ -194,58 +215,7 @@ def to_polor(col, period):
     col1 = col.apply(lambda x: math.cos(2*math.pi *x /period))
     col2 = col.apply(lambda x: math.sin(2*math.pi *x /period))
     return col1, col2
-    
-def fillna(df, areas):
-    df = df.interpolate(limit=1, limit_direction='both')
-    stations = df['stationId'].unique()
-    stations = df['area'].unique()
-    years = df['year'].unique()
-    weeks = df['week'].unique()
-    dates = df['date'].unique()
-    hours = df['hour'].unique()
-    print (df.isnull().values.any())
 
-    for a in areas:
-        a_loc = df['area'] == a
-        for h in hours:
-            h_loc = df['hour'] == h
-            for d in dates:
-                d_loc = df['date'] == d
-                fill = a_loc & d_loc & h_loc
-                if (df.loc[fill].isnull().values.any()):
-                    loc = fill
-                    if(len(df.loc[loc].dropna()) != 0):
-                        mean = df.loc[loc].dropna().mean().round(2)
-                        df.loc[fill] = df.loc[fill].fillna(mean)
-
-    for s in stations:
-        s_loc = df['stationId'] == s
-        a = areas[s]['area']
-        a_loc = df['area'] == a
-        for h in hours:
-            h_loc = df['hour'] == h
-            for y in years:
-                y_loc = df['year'] == y
-                for w in weeks:
-                    w_loc = df['week'] == w
-                    fill = s_loc & y_loc & w_loc & h_loc
-                    if (df.loc[fill].isnull().values.any()):
-                        loc = fill
-                        if (len(df.loc[loc].dropna()) == 0):
-                            loc = a_loc & y_loc & w_loc & h_loc
-                        if (len(df.loc[loc].dropna()) == 0):
-                            loc = s_loc & y_loc & h_loc
-                        if (len(df.loc[loc].dropna()) == 0):
-                            loc = a_loc & y_loc & h_loc
-                        if (len(df.loc[loc].dropna()) == 0):
-                            loc = y_loc & h_loc
-                        if (len(df.loc[loc].dropna()) != 0):
-                            print(a, s, y, w, h)
-                            mean = df.loc[loc].dropna().mean().round(2)
-                            df.loc[fill] = df.loc[fill].fillna(mean)
-    print (df.isnull().values.any())
-    
-    return df
    
 def split_data(data, r):
     valid = int(len(data['input']) * (1 - r))

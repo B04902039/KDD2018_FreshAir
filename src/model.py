@@ -104,9 +104,10 @@ class AirNet(object):
                     decoder_input = output_seq[t]
                 else :
                     decoder_input = decoder_output
-
+        
         loss = self.criterion(pred_seq, output_seq)
-
+        # pred_seq = pred_seq + input_seq[24:,:,:3]
+        # output_seq = output_seq + input_seq[24:,:,:3]
         return loss, output_seq.transpose(0, 1), pred_seq.transpose(0, 1)
     
     def log(self, gts, preds, losss):

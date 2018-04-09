@@ -28,8 +28,8 @@ def parse():
     parser.add_argument('--valid-ratio', type=float, default=0.2, help='valid ratio')        
     parser.add_argument('--tfr', type=float, default=0.8, help='teacher forcing ratio')  
     parser.add_argument('--dropout', type=float, default=0.2, help='dropout rate')   
-    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')   
-    parser.add_argument('--epochs', type=int, default = 50, help='epochs')   
+    parser.add_argument('--lr', type=float, default=2e-3, help='learning rate')   
+    parser.add_argument('--epochs', type=int, default = 100, help='epochs')   
     parser.add_argument('--batch-size', type=int, default=64, help='batch size')   
     # interval 
     parser.add_argument('--log-interval', type=int, default=1, help='log interval')     
