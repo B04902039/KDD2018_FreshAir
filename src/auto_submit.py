@@ -94,11 +94,11 @@ if __name__ == '__main__':
         submission_cnt += 1
     
     if submission_cnt < 3:
-        #[bj_filepath, ld_filepath] = downloadLatestData()
+        [bj_filepath, ld_filepath] = downloadLatestData()
         ld_fillna_path = '../data/london_latest_fillna.csv'
         bj_fillna_path = '../data/beijing_latest_fillna.csv'
-        #subprocess.run('python dataUtil.py {} {} bj'.format(bj_filepath, bj_fillna_path), shell=True)
-        #subprocess.run('python dataUtil.py {} {} ld'.format(ld_filepath, ld_fillna_path), shell=True)
+        subprocess.run('python dataUtil.py {} {} bj'.format(bj_filepath, bj_fillna_path), shell=True)
+        subprocess.run('python dataUtil.py {} {} ld'.format(ld_filepath, ld_fillna_path), shell=True)
         ld_df = pd.read_csv(ld_fillna_path)[-120*13:]
         bj_df = pd.read_csv(bj_fillna_path)[-120*35:]
         sample = pd.read_csv('../data/sample_submission.csv')
