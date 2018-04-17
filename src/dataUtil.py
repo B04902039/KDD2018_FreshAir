@@ -149,9 +149,13 @@ def build_feat(x):
 if __name__ == '__main__':
     input_path = sys.argv[1]
     output_path = sys.argv[2]
+    city = sys.argv[3]
     df = pd.read_csv(input_path)
     
-    df = fillna(df, london2area)
+    if city=='ld' or city=='london':
+        df = fillna(df, london2area)
+    elif city=='bj' or city=='beijing':
+        df = fillna(df, beijing2area)
     df.to_csv(output_path, index =  False)
     # schema = list(df.columns.values)[4:]
     # lon_bound = (df['longitude'].min(0), df['longitude'].max(0))
