@@ -7,7 +7,8 @@ def smape(y_true, y_pred):
     y = diff / factor
     y[np.isnan(y)] = 0
     y[np.isinf(y)] = 0
-    return 200 * np.mean(y)
+    return np.mean(np.mean(y, 0),0) *200
+    # return 200 * np.mean(y)
 
 def mape(y_true, y_pred):
     diff = np.abs(y_pred - y_true)

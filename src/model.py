@@ -73,17 +73,19 @@ class AirNet(object):
         else :
             self.criterion = nn.L1Loss()
 
-    def run_batch(self, batch, tfr):
+    def run_batch(self, batch, tfr = 0.8, isTrain = True):
+        batch_size = len(batch['input'])
         input_seq = batch['input'].transpose(0, 1)
-        output_seq = batch['output'].transpose(0, 1)
         input_seq = Variable(input_seq)
-        output_seq = Variable(output_seq)
-        pred_seq = Variable(torch.zeros(output_seq.size()))
-        batch_size = output_seq.size()[1]
+        if isTrain:
+            output_seq = batch['output'].transpose(0, 1)
+            output_seq = Variable(output_seq)
+        pred_seq = Variable(torch.zeros(self.output_length, batch_size, self.output_dim ))
         if self.use_cuda:
             input_seq = input_seq.cuda()
-            output_seq = output_seq.cuda()
             pred_seq = pred_seq.cuda()
+            if isTrain:
+                output_seq = output_seq.cuda()
 
         encoder_hidden = self.encoder.init_hidden(batch_size)
         encoder_outputs, encoder_hidden = self.encoder(input_seq, encoder_hidden)
@@ -100,23 +102,29 @@ class AirNet(object):
                     decoder_input, decoder_hidden, encoder_outputs
                 )
                 pred_seq[t] = decoder_output
-                if random() < self.tfr:
+                if isTrain and random() < tfr:
                     decoder_input = output_seq[t]
                 else :
                     decoder_input = decoder_output
-        
-        loss = self.criterion(pred_seq, output_seq)
-        # pred_seq = pred_seq + input_seq[24:,:,:3]
-        # output_seq = output_seq + input_seq[24:,:,:3]
-        return loss, output_seq.transpose(0, 1), pred_seq.transpose(0, 1)
+                    
+        if isTrain:
+            loss = self.criterion(pred_seq, output_seq)
+          #  copy_seq = input_seq[24:,:,:3]
+          # copy_seq = input_seq[24:,:,:3].repeat(2,1,1)
+          #  pred_seq = pred_seq + copy_seq
+          #  output_seq = output_seq + copy_seq
+            return loss, output_seq.transpose(0, 1), pred_seq.transpose(0, 1)
+
+        else :
+            return pred_seq.transpose(0, 1)
     
     def log(self, gts, preds, losss):
         _smape = smape(gts, preds)
         _mape = mape(gts, preds)
         _loss = np.mean(losss)
         print('loss : {:.3f} smape : {:.3f} mape : {:.3f}'.format(
-            _loss, _smape, _mape))
-        return _loss, _smape, _mape
+            _loss, np.mean(_smape), _mape))
+        return _loss, np.mean(_smape), _mape, _smape 
 
     def train(self, train_loader, valid_loader):
         self.steps = 0
@@ -148,11 +156,11 @@ class AirNet(object):
             if e % self.log_interval == 0:
                 print('======== eval {} ========'.format(e))  
                 print('======== train ========')
-                _loss, _smape, _mape = self.log(GTs, PREDs, LOSSs)
-                self.tr_hist.append([_loss, _smape, _mape])
+                _loss, _smape, _mape, smape_c  = self.log(GTs, PREDs, LOSSs)
+                self.tr_hist.append([_loss, _smape, _mape, *smape_c])
                 print('======== valid ========')
-                _loss, _smape, _mape = self.eval(valid_loader)
-                self.val_hist.append([_loss, _smape, _mape])
+                _loss, _smape, _mape, smape_c = self.eval(valid_loader)
+                self.val_hist.append([_loss, _smape, _mape, *smape_c])
         return self.tr_hist, self.val_hist
 
     def eval(self, valid_loader):  
@@ -174,39 +182,19 @@ class AirNet(object):
                 LOSSs = np.concatenate([LOSSs, _loss], axis=0)
                 PREDs = np.concatenate([PREDs, _pred], axis=0)
                 GTs = np.concatenate([GTs, _gt], axis=0)
-        _loss, _smape, _mape = self.log(GTs, PREDs, LOSSs)
+        _loss, _smape, _mape, smape_c  = self.log(GTs, PREDs, LOSSs)
         self.encoder.train()
         self.decoder.train()
-        return _loss, _smape, _mape
+        return _loss, _smape, _mape, smape_c
         
     def test(self, test_loader):  
         self.encoder.eval()
         self.decoder.eval()
         PREDs = []
         for i, x in enumerate(test_loader):
-            input_seq = x['input']
-            batch_size = len(x)
-
-            pred_seq = Variable(torch.zeros(self.output_length, batch_size, output_dim))
-
-            if self.use_cuda:
-                input_seq = input_seq.cuda()
-                pred_seq = pred_seq.cuda()
-
-            encoder_hidden = self.encoder.init_hidden(batch_size)
-            encoder_outputs, encoder_hidden = self.encoder(input_seq, encoder_hidden)
-
-            decoder_input = Variable(input_seq[-1])
-            decoder_hidden = encoder_hidden[-1] 
-
-            for t in range(self.output_length):
-                decoder_output, decoder_hidden, decoder_attn = decoder(
-                    decoder_input, decoder_hidden, encoder_outputs
-                )
-                pred_seq[t] = decoder_output
-                decoder_input = decoder_output
-            pred = pred_seq.cpu().data.numpy()
-            PREDs.append(pred)
+            pred = self.run_batch(x, 0, False)
+            _pred = pred.cpu().data.numpy()
+            PREDs.append(_pred)
         return np.asarray(PREDs)
 
     def adjust_lr(self, iter):

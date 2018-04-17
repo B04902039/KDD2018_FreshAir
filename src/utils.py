@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from random import random, shuffle
+import datetime
 import string
 import math
 from torch.utils.data import Dataset, DataLoader
@@ -13,10 +14,10 @@ d_schema = ['quarter_cos', 'quarter_sin', 'month_cos', 'month_sin',
     'weekday_cos', 'weekday_sin', 'hour_cos', 'hour_sin']
 a_schema = ['other',  'suburban', 'traffic', 'urban']
 class AirDataSet(Dataset):
-    def __init__(self, data = None, istrain = True):
+    def __init__(self, data = None, isTrain = True):
         self.inputs = data['input']
-        self.istrain = istrain
-        if(self.istrain) :
+        self.isTrain = isTrain
+        if(self.isTrain) :
             self.outputs = data['output']
 
     def __len__(self):
@@ -24,7 +25,7 @@ class AirDataSet(Dataset):
 
     def __getitem__(self, idx):
         input = FloatTensor(self.inputs[idx])
-        if(self.istrain) :
+        if(self.isTrain) :
             output = FloatTensor(self.outputs[idx])
             sample = {'input': input, 'output': output}
         else :
@@ -60,17 +61,19 @@ def load_meta(meta_dir):
 
 def load_train_data(args):
     df = pd.read_csv(args.train_path)
+    # df = fillna(df, areas)
+    # df = df.fillna(method='pad')
+    # df = df.fillna(0)
     en2ch, ch2en, station_info, areas = load_meta(args.meta_dir)
     df = parse_time(df, areas)
-    # df = fillna(df, areas)
-    df = df.fillna(method='pad')
-    df = df.fillna(0)
-    
     area = pd.get_dummies(df['area'])
     df = df.join(area)
     df = tranform_corordinate(df)
-
-    return hour2hour_byarea(df)
+    start = datetime.date(2017, 4, 13)
+    end = datetime.date(2017, 5, 15)
+    test = df.loc[(df['date'] >= start) & (df['date'] <= end)]
+    train = df.loc[(df['date'] < start) | (df['date'] > end)]
+    return train, test
 
 def hour2hour(df):
     df = df.groupby('stationId')
@@ -78,6 +81,8 @@ def hour2hour(df):
     for g1, s in df:
         data[g1] = {}
         s = s.groupby('date')
+        fs = []
+        hs = []
         inputs = []
         outputs = []
         for g2, d in s:
@@ -90,12 +95,13 @@ def hour2hour(df):
         for i in range(len(fs) - 1):
             f = np.concatenate((fs[i], fs[i+1]), axis=0)
             inputs.append(f)
-            h = hs[i]
-            # h = np.concatenate((hs[i], hs[i+1]), axis=0)
+            # h = hs[i]
+            h = np.concatenate((hs[i], hs[i+1]), axis=0)
+            # h = hs[i]
+            h = h[:48]
             outputs.append(h)
         data[g1]['input'] = np.asarray(inputs)        
-        data[g1]['output'] = np.asarray(outputs)
-        
+        data[g1]['output'] = np.asarray(outputs)        
     return data
 
 def hour2hour_nogroup(df):
@@ -112,7 +118,10 @@ def hour2hour_nogroup(df):
         for i in range(len(fs) - 47):
             f =fs[i:i+48]
             inputs.append(f)
-            h =hs[i:i+24]
+            h =hs[i:i+48]
+            # h =hs[i+24:i+48]
+            # h[:24] = h[:24] - f[24:,:3]
+            # h[24:] = h[24:] - f[24:,:3]
             outputs.append(h)
         data[g1]['input'] = np.asarray(inputs)
         data[g1]['output'] = np.asarray(outputs)
@@ -135,7 +144,7 @@ def hour2hour_byarea(df):
             for i in range(len(fs) - 47):
                 f =fs[i:i+48]
                 inputs.append(f)
-                h =hs[i:i+24]
+                h = hs[i:i+24] 
                 outputs.append(h)
         data[g1]['input'] = np.asarray(inputs)
         data[g1]['output'] = np.asarray(outputs)
@@ -191,7 +200,7 @@ def hour2date(df):
         data[g1]['output'] = outputs
     return data
 
- def parse_time(df, areas):
+def parse_time(df, areas):
     df['utc_time'] = pd.to_datetime(df['utc_time'])
     df['year'] = df['utc_time'].dt.year
     df['quarter'] = df['utc_time'].dt.quarter
