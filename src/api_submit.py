@@ -3,7 +3,7 @@
 
 import requests
 
-files={'files': open('sample_submission.csv','rb')}
+files={'files': open('../queue/default.csv','rb')}
 
 data = {
     "user_id": "LoChiChen",   #user_id is your username which can be found on the top-right corner on our website when you logged in.

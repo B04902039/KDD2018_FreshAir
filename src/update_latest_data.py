@@ -24,7 +24,7 @@ def downloadLatestData():
     date = df['utc_time'][len(df)-1]
     subprocess.run('rm {}*'.format(ld_filepath), shell=True)
     ld_filepath = '{}{}.csv'.format(ld_filepath,date.replace(' ', '-'))
-    df.to_csv(ld_filepath)
+    df.to_csv(ld_filepath, index=False)
     
     df = pd.read_csv(bj_filepath+'.csv')
     df = df.drop('id', axis=1)
@@ -32,7 +32,7 @@ def downloadLatestData():
     date = df['utc_time'][len(df)-1]
     subprocess.run('rm {}*'.format(bj_filepath), shell=True)
     bj_filepath = '{}{}.csv'.format(bj_filepath,date.replace(' ', '-'))
-    df.to_csv(bj_filepath)
+    df.to_csv(bj_filepath, index=False)
     
     return [bj_filepath, ld_filepath]
     
